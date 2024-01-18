@@ -1,0 +1,231 @@
+function min {
+    # get arguments
+    local args=($@)
+
+    # set control variables
+    local num=^[0-9]*$
+    local numerical="True"
+    
+    # compare each argument to the numerical regex and set $numerical to false if
+    # any of them doesn't match
+    for i in ${args[@]}; do
+        if ! [[ $i =~ $num ]]; then
+            local numerical="False"
+        fi
+    done
+    
+    # loop to handle lists of numerical values. 
+    if [[ $numerical == "True" ]]; then
+
+    # handles values with leading zeros. If they are present, they are removed .
+    # The remaining portion of the number is passed onward. 
+        for i in ${args[@]}; do
+            for ((c=0; c<${#i}; c++)); do 
+                if (( ${i:$c:1} > 0 )); then
+                    i=${i:$c}
+                    break
+                fi
+            done
+            
+            # list comparison: if $min exists, it is compared to the current 
+            # argument. If it is greater than the current argument, it is 
+            # set to the value of the current argument.
+            if [[ -v min ]]; then 
+                if (( $min > $i )); then
+                    local min=$i
+                fi
+            # if $min doesn't exist yet, it is declared as the value of the
+            # current argument.
+            else
+                local min=$1
+            fi
+        done
+    else
+
+        # if the entire list is not numerical, run a string comparison
+        for i in ${args[@]}; do 
+            if [[ -v min ]]; then
+                if [[ $min > $i ]]; then
+                    local min=$i
+                fi
+            else
+                local min=$i
+            fi
+        done
+    fi
+    
+    echo $min
+}
+
+function max {
+    # get arguments
+    local args=($@)
+
+    # set control variables
+    local num=^[0-9]*$
+    local numerical="True"
+
+    # compare each argument to the numerical regex and set $numerical to false if
+    # any of them doesn't match
+    for i in ${args[@]}; do
+        if ! [[ $i =~ $num ]]; then
+            local numerical="False"
+        fi
+    done
+    
+    # loop to handle lists of numerical values. 
+    if [[ $numerical == "True" ]]; then
+        
+        # handles values with leading zeros. If they are present, they are removed .
+        # The remaining portion of the number is passed onward. 
+        for i in ${args[@]}; do
+            for ((c=0; c<${#i}; c++)); do
+                if (( ${i:$c:1} > 0 )); then
+                    i=${i:$c}
+                    break
+                fi
+            done    
+
+            # list comparison: if $max exists, it is compared to the current 
+            # argument. If it is greater than the current argument, it is 
+            # set to the value of the current argument.
+            if [[ -v max ]]; then 
+                if (( $max > $i )); then
+                    local max=$i
+                fi
+            # if $max doesn't exist yet, it is declared as the value of the
+            # current argument.
+            else
+                local max=$1
+            fi
+        done
+    else
+        
+        # if the entire list is not numerical, run a string comparison
+        for i in ${args[@]}; do 
+            if [[ -v max ]]; then
+                if [[ $max > $i ]]; then
+                    local max=$i
+                fi
+            else
+                local max=$i
+            fi
+        done
+    fi
+    
+    echo $max
+}
+                
+
+function get_delimiter {
+    # This is a basic method to find a delimiter in a string. It returns the most
+    # common non-alphanumeric character in a string. In most cases, this will be 
+    # effective, but it can make mistakes. A keyword argument can be used to exclude
+    # characters.
+
+    args=($@)
+
+    # check arguments for an exclusion. assumes that the string being parsed for 
+    # delimiter does not contain spaces, or is quoted.
+    for arg in ${args[@]}; do
+        if [[ "$arg" == *"--exclude"* ]] || [[ "$arg" == *"-e"* ]]; then
+            local exclusion=$(awk -F"=" '{print $2}')
+        else
+            local string=$arg
+        fi
+    done
+	
+    #define regex to match all alphanumeric characters, strings, etc.
+    local alnum=^[a-zA-Z0-9]*$
+    
+    #iterate through the characters in the string
+    for ((i=0; i<${#string}; i++)); do
+
+        #grab the character
+        local char=${string:$i:1}
+        
+        # ensure the character is not alphanumeric, and either add the character 
+        # as a key in the punc_count associative array or increment the existing 
+        # one
+        if ! [[ $char =~ $alnum ]] && [[ $exclusion != *"$char"* ]]; then
+            if [[ -v punc_count && ${!punc_count[@]} != *"$char"* ]] \
+                || ! [[ -v punc_count ]]; then
+                declare -A local punc_count["$char"]=1
+            else
+                ((punc_count["$char"]+=1))
+            fi
+        fi
+    done
+    
+    #iterate through the keys in punc_count and assign the one with the highest count as the delimiter
+    local max_count=0
+    for k in ${!punc_count[@]}; do 
+        local v=${punc_count[$k]}
+        if (( $v > $max_count )); then
+            local max_count=$v
+            local delimiter=$k
+        fi
+    done
+    echo "$delimiter"
+}
+
+function split_string {
+    # Function to split a provided string into multiple words by replacing a given
+    # separator character with spaces. When passing parameters to the function, 
+    # the first argument is the string to separate, and the second argument is the
+    # separator. This allows for the inferrence of the separator, if one is not 
+    # provided.
+    local args=($@)
+    if (( ${#args[@]} >= 1 )); then
+        local string=${args[0]}
+        if (( ${#args[@]} >= 2 )); then
+            local sep=${args[1]}
+        else 
+            local sep=$(get_delimiter $string)
+        fi 
+    else 
+        echo "at least one argument is required."
+    fi
+    
+    # if no separator is provided, and one cannot be inferred, a space is used as
+    # separator. This is here because the get_delimiter function will not return 
+    # a space character.
+    if (( ${#sep} == 0 )); then
+        local sep=" "
+    fi
+    
+    # in the case that the separator is a special character, like a pipe or slash,
+    # non-alphanumeric characters have an escape appended to the beginning.
+    local alnum=^[a-zA-Z0-9]*$
+    if ! [[ $sep =~ $alnum ]]; then
+        local sep='\'"$sep"
+    fi
+
+    # returns the string properly seded
+    echo $(sed "s/$sep/ /"g <<< $string)
+}
+
+function join_array {
+    # Function to join an array of string values into a single string, by interpolating
+    # them with a given separator character
+    local args=($@)
+    
+    # the separator argument comes first, everything following it is considered part of
+    # the array to join.
+    local sep=${args[0]}
+    local string_array=(${args[@]:1})
+    
+    # each element in the array is iterated through and appended to the end of the output
+    # string, with the separator character added for every element but the final one
+    for ((i=0; i<${#string_array[@]}; i++)); do
+        local segment=${string_array[$i]}
+        if (( $i == ((${#string_array[@]} - 1)) )); then 
+            local string+="$segment"
+        else
+            local string+="$segment$sep"
+        fi
+    done
+
+    # returns the output string.    
+    echo $string
+}

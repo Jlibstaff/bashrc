@@ -1,0 +1,44 @@
+function mkcd () { 
+    # simple function to create a folder and cd into it
+	mkdir $1 && cd $1 
+} 
+
+function mkvenv () {
+    # function to create a python virtual environment. Accepts one optional
+    # argument to specify which version of python to use. If no version
+    # number is provided, or if the version number provided does not exist
+    # in $PATH, then the default python3 version is used. 
+
+    if [[ -d .venv ]]; then
+        echo "virtual environment folder already exists!"
+        exit 1
+    fi
+
+    if [[ $1 ]] && [[ "$(which python${1})" > "" ]]; then
+        python${1} -m venv .venv
+    else
+        python3 -m venv .venv
+    fi
+
+    .venv/bin/pip3 install --upgrade pip
+    
+    if [[ -f requirements.txt ]]; then
+        .venv/bin/pip3 install -r requirements.txt
+    fi
+}
+
+function mkpy () {
+    # simple function to create an empty python script with the proper shebang
+    # in place, pointing to the default python3.
+	if [[ -d ./.venv ]]; then
+		echo '#!'"$(pwd)/.venv/bin/python3" > $1
+	else
+		echo '#!'"$(which python3)" > $1
+	fi
+}
+
+function mksh () {
+    # simple function to create an empty bash script with the proper shebang
+    # in place, pointing to the default bash.
+	echo '#!'"$(which bash)" > $1
+}

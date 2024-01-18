@@ -1,0 +1,12 @@
+ alias nv='nvim
+
+ source ~/bashrc/.string_tools
+ source ~/bashrc/.file_tools
+
+ if [[ -f "${HOSTNAME}_spec" ]]; then
+     source ~/bashrc/.$HOSTNAME_spec
+ fi
+
+ GIT_PROMPT_ONLY_IN_REPO=0
+ GIT_PROMPT_THEME=JLL  # you can choose any theme you like, just select one in Git\etc\.bash-git-prompt\themes 
+ source ~/bashrc/bash-git-prompt/gitprompt.sh
