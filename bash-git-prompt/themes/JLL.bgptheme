@@ -1,0 +1,48 @@
+# This theme for gitprompt.sh is designed for dark color schemes
+# It is most suitable for Retina or high resolution displays
+
+override_git_prompt_colors() {
+	GIT_PROMPT_THEME_NAME="JLL"
+
+	GIT_PROMPT_PREFIX=""                  # start of the git info string
+	GIT_PROMPT_SUFFIX=""                  # the end of the git info string
+	GIT_PROMPT_SEPARATOR="|"              # separates each item
+
+	GIT_PROMPT_BRANCH="${Magenta}"        # the git branch that is active in the current directory
+	GIT_PROMPT_MASTER_BRANCH="${GIT_PROMPT_BRANCH}" # used if the git branch that is active in the current directory is $GIT_PROMPT_MASTER_BRANCHES
+	GIT_PROMPT_STAGED="${Cyan}●"          # the number of staged files/directories
+	GIT_PROMPT_CONFLICTS="${BoldRed}✖"    # the number of files in conflict
+	GIT_PROMPT_CHANGED="${Cyan}✚"         # the number of changed files
+
+	GIT_PROMPT_UNTRACKED="${Cyan}…"       # the number of untracked files/dirs
+	GIT_PROMPT_STASHED="${Magenta}⚑"      # the number of stashed files/dir
+	GIT_PROMPT_CLEAN="${BoldGreen}✔"      # a colored flag indicating a "clean" repo
+
+	GIT_PROMPT_UPSTREAM=" {${Magenta}_UPSTREAM_${ResetColor}}"
+
+	USER_HEAD="[${Cyan}\t${ResetColor}][${BoldGreen}\u${ResetColor}@"
+	ROOT_HEAD="[${Cyan}\t${ResetColor}][${BoldRed}\u${ResetColor}@"
+
+	if [[ "$(hostname)" == "hpdsbuild"* ]]; then
+		GIT_PROMPT_START_USER="${USER_HEAD}${BoldBlue}\h${ResetColor}] ${BoldBlue}\w${ResetColor}"
+		GIT_PROMPT_START_ROOT="${ROOT_HEAD}${BoldBlue}\h${ResetColor}] ${BoldBlue}\w${ResetColor}"
+	elif [[ "$(hostname)" == "sxipciap"* ]]; then
+		GIT_PROMPT_START_USER="${USER_HEAD}${BoldRed}\h${ResetColor}] ${BoldBlue}\w${ResetColor}"
+		GIT_PROMPT_START_ROOT="${ROOT_HEAD}${BoldRed}\h${ResetColor}] ${BoldBlue}\w${ResetColor}"
+	elif [[ "$(hostname)" == "sxpchdap4"* ]]; then
+		GIT_PROMPT_START_USER="${USER_HEAD}${BoldYellow}\h${ResetColor}] ${BoldBlue}\w${ResetColor}"
+		GIT_PROMPT_START_ROOT="${ROOT_HEAD}${BoldYellow}\h${ResetColor}] ${BoldBlue}\w${ResetColor}"
+	elif [[ "$(hostname)" == "sxpchdap5"* ]]; then
+		GIT_PROMPT_START_USER="${USER_HEAD}${BoldGreen}\h${ResetColor}] ${BoldBlue}\w${ResetColor}"
+		GIT_PROMPT_START_ROOT="${ROOT_HEAD}${BoldGreen}\h${ResetColor}] ${BoldBlue}\w${ResetColor}"
+	else
+		GIT_PROMPT_START_USER="${USER_HEAD}${Cyan}\h${ResetColor}] ${BoldBlue}\w${ResetColor}"
+		GIT_PROMPT_START_ROOT="${ROOT_HEAD}${Cyan}\h${ResetColor}] ${BoldBlue}\w${ResetColor}"
+	fi
+	GIT_PROMPT_END_USER=":$ "
+	GIT_PROMPT_END_ROOT=":# "
+
+	GIT_PROMPT_SYMBOLS_NO_REMOTE_TRACKING="⭑"   # This symbol is written after the branch, if the branch is not tracked
+}
+
+reload_git_prompt_colors "JLL"
