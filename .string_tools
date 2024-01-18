@@ -4,36 +4,37 @@ function min {
 
     # set control variables
     local num=^[0-9]*$
+    local float=^[0-9]\.+[0-9]+$
     local numerical="True"
     
     # compare each argument to the numerical regex and set $numerical to false if
     # any of them doesn't match
     for i in ${args[@]}; do
-        if ! [[ $i =~ $num ]]; then
-            local numerical="False"
+        if [[ $i =~ $num ]] || [[ $i =~ $float ]]; then
+            local num_items+=("True")
+        else 
+            local num_items+=("False")
         fi
     done
     
+    if [[ "${num_items[@]}" == *"False"* ]]; then
+        local numerical="False"
+    fi
+
     # loop to handle lists of numerical values. 
     if [[ $numerical == "True" ]]; then
 
-    # handles values with leading zeros. If they are present, they are removed .
-    # The remaining portion of the number is passed onward. 
+        # list comparison: 
         for i in ${args[@]}; do
-            for ((c=0; c<${#i}; c++)); do 
-                if (( ${i:$c:1} > 0 )); then
-                    i=${i:$c}
-                    break
-                fi
-            done
             
-            # list comparison: if $min exists, it is compared to the current 
+            #if $min exists, it is compared to the current 
             # argument. If it is greater than the current argument, it is 
             # set to the value of the current argument.
             if [[ -v min ]]; then 
-                if (( $min > $i )); then
+                if (( $( echo "$min > $i" | bc -l) )); then
                     local min=$i
                 fi
+            
             # if $min doesn't exist yet, it is declared as the value of the
             # current argument.
             else
@@ -60,51 +61,52 @@ function min {
 function max {
     # get arguments
     local args=($@)
-
+    
     # set control variables
     local num=^[0-9]*$
+    local fl=^[0-9]\.+[0-9]+$ 
     local numerical="True"
-
+    
     # compare each argument to the numerical regex and set $numerical to false if
     # any of them doesn't match
-    for i in ${args[@]}; do
-        if ! [[ $i =~ $num ]]; then
-            local numerical="False"
+    for arg in ${args[@]}; do
+        if [[ $arg =~ $num ]] || [[ $arg =~ $fl ]]; then
+            local num_items+=("True")
+        else
+            local num_items+=("False")
         fi
     done
+
+    if [[ "${num_items[@]}" == *"False"* ]]; then 
+        local numerical="False"
+    fi
     
     # loop to handle lists of numerical values. 
     if [[ $numerical == "True" ]]; then
-        
-        # handles values with leading zeros. If they are present, they are removed .
-        # The remaining portion of the number is passed onward. 
-        for i in ${args[@]}; do
-            for ((c=0; c<${#i}; c++)); do
-                if (( ${i:$c:1} > 0 )); then
-                    i=${i:$c}
-                    break
-                fi
-            done    
 
-            # list comparison: if $max exists, it is compared to the current 
-            # argument. If it is greater than the current argument, it is 
-            # set to the value of the current argument.
+        # list comparison: if $max exists, it is compared to the current 
+        # argument. If it is greater than the current argument, it is 
+        # set to the value of the current argument.
+        for i in ${args[@]}; do
             if [[ -v max ]]; then 
-                if (( $max > $i )); then
+                if (( $(echo "$max < $i" | bc -l) )); then
                     local max=$i
                 fi
+
             # if $max doesn't exist yet, it is declared as the value of the
             # current argument.
             else
                 local max=$1
             fi
+
         done
+
     else
         
         # if the entire list is not numerical, run a string comparison
         for i in ${args[@]}; do 
             if [[ -v max ]]; then
-                if [[ $max > $i ]]; then
+                if [[ $max < $i ]]; then
                     local max=$i
                 fi
             else
@@ -178,8 +180,19 @@ function split_string {
     local args=($@)
     if (( ${#args[@]} >= 1 )); then
         local string=${args[0]}
+        echo "string: $string"
         if (( ${#args[@]} >= 2 )); then
-            local sep=${args[1]}
+            local sep=${args[-1]}
+            echo "sep: $sep"
+            
+            if (( ${#args[@]} > 2 )); then
+                for arg in ${args[@]}; do
+                    if [[ $arg != $string ]] && [[ $arg != ${args[-1]} ]]; then
+                        string+=" $arg"
+                    fi
+                done
+            fi
+        
         else 
             local sep=$(get_delimiter $string)
         fi 
@@ -200,6 +213,8 @@ function split_string {
     if ! [[ $sep =~ $alnum ]]; then
         local sep='\'"$sep"
     fi
+
+    echo "sep after modifications: $sep"
 
     # returns the string properly seded
     echo $(sed "s/$sep/ /"g <<< $string)
